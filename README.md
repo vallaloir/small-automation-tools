@@ -1,2 +1,4 @@
 # small-automation-tools
-A small repo containing small automation tools to make repetitive tasks requiring some precision faster and trying out Marimo
+A small repo containing small automation tools to make repetitive, routine tasks requiring some precision faster. The tasks are related to billing at a Catalan school processing files extracted from their management system and cleaned up while performing small calculations according to the school billing rules. The requirements have been extracted from the people performing the tasks manually. Another goal of this repository and task is to try out Marimo.
+
+The main task includes cleaning an attendance CSV extracted from the school management system and processing it into a file from which checking and billing can be performed. It also calculates the price or discount per student based on school rules and procedures, which are added via their own CSVs. Prices and discounts are in their own CSV to allow modifying them anually but preventing having to manually add them every month (other than uploading the file).
