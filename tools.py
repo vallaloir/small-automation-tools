@@ -1,0 +1,397 @@
+import marimo
+
+__generated_with = "0.14.10"
+app = marimo.App(width="medium")
+
+
+@app.cell(hide_code=True)
+def _():
+    import marimo as mo  # Recommended by Marimo to be imported as first and only
+
+    return (mo,)
+
+
+@app.cell(hide_code=True)
+def _():
+    import calendar
+    import numpy as np
+    import polars as pl
+
+    return calendar, np, pl
+
+
+@app.cell(hide_code=True)
+def _():
+    # Define necessary constants
+    PERMANENT_TYPE = 1
+    TEMPORARY_TYPE = 2
+    TITLE_TEMPORARY_PRICE = (
+        "**Introduïu els preus en funció dels dies que s'ha quedat l'alumne:**"
+    )
+    TEMPORARY_PRICE_LABEL = "Preu (en €) per >{min_days} dies:"
+    TITLE_PERMANENT_PRICE = "**Introduïu el descompte per faltar un dia:**"
+    PERMANENT_PRICE_LABEL = "Descompte (en €, serà considerat negatiu):"
+    SAVE_LABEL = "Utilitza els preus i descomptes modificats"
+    MAIN_FILE_LABEL = "Selecciona el fitxer amb les files per agrupar:"
+    DOWNLOAD_LABEL = "Descarrega l'Excel"
+    N_ROWS_WITHOUT_RAW_DATA = 4
+    FILE_NAME_COL = "Tarifa"
+    COLS_TO_BE_REMOVED = [
+        "Dates",
+        "Menú",
+        FILE_NAME_COL,
+        "presents",
+        "absències",
+        "percentatge",
+        "Total",
+    ]
+    STUDENT_NAME_COL = "Resum d'assistència"
+    YEAR_COL = "Curs/classe"
+    LEVEL_COL = "Nivell"
+    CATEGORY_COL = "Inscripció"
+    ENCODING = "ISO-8859-1"
+    CATEGORIES = {
+        "Inscripció permanent": {"code": PERMANENT_TYPE, "type_to_count": "A"},
+        "Inscripció puntual": {"code": TEMPORARY_TYPE, "type_to_count": "P"},
+    }
+    PRICE_COL = "price"
+    PRICE_LABEL = "Selecciona el fitxer amb els preus (alumnes puntuals):"
+    DISCOUNT_COL = "discount"
+    DISCOUNT_LABEL = (
+        "Selecciona el fitxer amb els descomptes per faltes (alumnes permanents):"
+    )
+    return (
+        CATEGORIES,
+        CATEGORY_COL,
+        COLS_TO_BE_REMOVED,
+        DISCOUNT_COL,
+        DISCOUNT_LABEL,
+        DOWNLOAD_LABEL,
+        ENCODING,
+        FILE_NAME_COL,
+        LEVEL_COL,
+        MAIN_FILE_LABEL,
+        N_ROWS_WITHOUT_RAW_DATA,
+        PERMANENT_PRICE_LABEL,
+        PERMANENT_TYPE,
+        PRICE_COL,
+        PRICE_LABEL,
+        SAVE_LABEL,
+        STUDENT_NAME_COL,
+        TEMPORARY_PRICE_LABEL,
+        TEMPORARY_TYPE,
+        TITLE_PERMANENT_PRICE,
+        TITLE_TEMPORARY_PRICE,
+        YEAR_COL,
+    )
+
+
+@app.cell(hide_code=True)
+def _(PRICE_LABEL, mo):
+    prices = mo.ui.file(
+        filetypes=[".csv"],
+        label=PRICE_LABEL,
+        kind="area",
+    )
+    prices
+    return (prices,)
+
+
+@app.cell(hide_code=True)
+def _(DISCOUNT_LABEL, mo):
+    discounts = mo.ui.file(
+        filetypes=[".csv"],
+        label=DISCOUNT_LABEL,
+        kind="area",
+    )
+    discounts
+    return (discounts,)
+
+
+@app.cell(hide_code=True)
+def _(
+    DISCOUNT_COL,
+    ENCODING,
+    PERMANENT_PRICE_LABEL,
+    PRICE_COL,
+    SAVE_LABEL,
+    TEMPORARY_PRICE_LABEL,
+    TITLE_PERMANENT_PRICE,
+    TITLE_TEMPORARY_PRICE,
+    discounts,
+    mo,
+    pl,
+    prices,
+):
+    # Generate all the elements
+    temporary_day_prices = pl.read_csv(
+        prices.contents(), encoding=ENCODING, separator=";"
+    ).sort(by="min_days", descending=True)
+    permanent_discount = pl.read_csv(
+        discounts.contents(), encoding=ENCODING, separator=";"
+    )
+    fields = []
+    for limit in temporary_day_prices.iter_rows(named=True):
+        input = mo.ui.number(
+            start=0,
+            value=limit[PRICE_COL],
+            label=TEMPORARY_PRICE_LABEL.format(min_days=limit["min_days"]),
+        )
+        fields.append(input)
+    discount_price = mo.ui.number(
+        start=0, value=limit[DISCOUNT_COL][0], label=PERMANENT_PRICE_LABEL
+    )
+    edit_button = mo.ui.run_button(kind="success", label=SAVE_LABEL)
+
+    # Display the elements in the correct order
+    mo.vstack(
+        [
+            mo.md(text=TITLE_TEMPORARY_PRICE),
+            *fields,
+            mo.md(text=TITLE_PERMANENT_PRICE),
+            discount_price,
+            edit_button,
+        ]
+    )
+    return (
+        discount_price,
+        edit_button,
+        fields,
+        permanent_discount,
+        temporary_day_prices,
+    )
+
+
+@app.cell(hide_code=True)
+def _(
+    DISCOUNT_COL,
+    PRICE_COL,
+    discount_price,
+    edit_button,
+    fields,
+    mo,
+    permanent_discount,
+    pl,
+    temporary_day_prices,
+):
+    # Callback for Edit button. Block the execution until button is clicked
+    mo.stop(not edit_button.value)
+
+    temporary_day_prices.replace_column(
+        temporary_day_prices.columns.index(PRICE_COL),
+        pl.Series(PRICE_COL, list(map(lambda input: input.value, fields))),
+    )
+    permanent_discount.replace_column(
+        permanent_discount.columns.index(DISCOUNT_COL),
+        pl.Series(DISCOUNT_COL, [discount_price.value]),
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(MAIN_FILE_LABEL, mo):
+    file = mo.ui.file(
+        filetypes=[".csv"],
+        label=MAIN_FILE_LABEL,
+        kind="area",
+    )
+    file
+    return (file,)
+
+
+@app.cell(hide_code=True)
+def _(
+    CATEGORIES,
+    CATEGORY_COL,
+    COLS_TO_BE_REMOVED,
+    ENCODING,
+    LEVEL_COL,
+    N_ROWS_WITHOUT_RAW_DATA,
+    PERMANENT_TYPE,
+    PRICE_COL,
+    STUDENT_NAME_COL,
+    TEMPORARY_TYPE,
+    YEAR_COL,
+    discount_price,
+    file,
+    np,
+    pl,
+    temporary_day_prices,
+):
+    # Define necessary auxiliary functions
+    def count_row_values(values: dict) -> dict[str, int]:
+        counts = np.unique_counts(list(values.values()))
+        return dict(zip(counts.values, counts.counts))
+
+    def calculate_presence_price_in_temporary(category_and_days: dict) -> str:
+        if (
+            category_and_days[CATEGORY_COL] not in CATEGORIES
+            or CATEGORIES[category_and_days[CATEGORY_COL]]["code"] != TEMPORARY_TYPE
+        ):
+            return ""
+        n_days = (
+            category_and_days.get(
+                CATEGORIES[category_and_days[CATEGORY_COL]]["type_to_count"]
+            )
+            or 0
+        )
+        return str(
+            n_days
+            * next(
+                filter(
+                    lambda price_info: n_days > price_info["min_days"],
+                    temporary_day_prices.iter_rows(named=True),
+                ),
+                {
+                    PRICE_COL: 0
+                },  # In case the student has not attended during the whole month
+            )[PRICE_COL]
+        ).replace(
+            ".", ","
+        )  # Use comma as decimal separator, since current Polars version cannot handle it
+
+    def calculate_absence_discount_in_permanent(category_and_days: dict) -> str:
+        if (
+            category_and_days[CATEGORY_COL] not in CATEGORIES
+            or CATEGORIES[category_and_days[CATEGORY_COL]]["code"] != PERMANENT_TYPE
+        ):
+            return ""
+        n_days = (
+            category_and_days.get(
+                CATEGORIES[category_and_days[CATEGORY_COL]]["type_to_count"]
+            )
+            or 0
+        )
+        return str(n_days * -1 * discount_price.value).replace(
+            ".", ","
+        )  # Use comma as decimal separator, since current Polars version cannot handle it
+
+    # Read as DF and format as expected
+    data = (
+        pl.read_csv(file.contents(), encoding=ENCODING, separator=";")
+        .limit(-N_ROWS_WITHOUT_RAW_DATA)
+        .drop(COLS_TO_BE_REMOVED, strict=False)
+    )
+    value_columns = list(data.columns)
+    value_columns.remove(STUDENT_NAME_COL)
+    value_columns.remove(YEAR_COL)
+    # Use the sorting functionality of np.unique to get the 'P', which is the last
+    # possible value if present and has highest priority. It also works for the
+    # categories, since if both are present ('puntual' and 'permanent'), 'puntual'
+    # (the last in alphabetic order) is wanted. For the year column, all the rows
+    # per student should have the same, so it is enough selecting the first.
+    # Then add up the corresponding type (A/P) based on the category
+    # (puntual/permanent) and get the correct price or discount
+    grouped_data = (
+        data.group_by(STUDENT_NAME_COL, maintain_order=True)
+        .agg(
+            # Generate the level column
+            [
+                pl.map_groups(
+                    exprs=YEAR_COL,
+                    function=lambda years: np.unique(years)[0].split(" / ", 1)[0],
+                    return_dtype=pl.datatypes.String,
+                    returns_scalar=True,
+                ).alias(LEVEL_COL)
+            ]
+            # If more than one row within the category,
+            # select the type with highest priority (last)
+            + [
+                pl.map_groups(
+                    exprs=col,
+                    function=lambda values: np.unique(values)[-1],
+                    return_dtype=pl.datatypes.String,
+                    returns_scalar=True,
+                )
+                for col in value_columns
+            ]
+        )
+        # Convert the level column to categorical to be able to keep the logical order
+        .with_columns(pl.col(LEVEL_COL).cast(pl.datatypes.Categorical))
+        .sort(by=pl.col(SORTING_COLS))
+        # Calculate the subtotals of each type and get each in a separate column
+        .with_columns(
+            Recompte=pl.struct(
+                pl.col(filter(lambda col: col != CATEGORY_COL, value_columns))
+            ).map_elements(
+                count_row_values,
+                return_dtype=pl.Struct(
+                    [pl.Field("-", pl.Int64)]
+                    + [
+                        pl.Field(category, pl.Int64)
+                        for category in map(
+                            lambda category: category["type_to_count"],
+                            CATEGORIES.values(),
+                        )
+                    ]
+                ),
+            )
+        )
+        .unnest("Recompte")
+        # Calculate the prices and discounts according to school rules
+        .with_columns(
+            Cobrar=pl.struct(
+                [
+                    CATEGORY_COL,
+                    next(
+                        filter(
+                            lambda category: category["code"] == PERMANENT_TYPE,
+                            CATEGORIES.values(),
+                        )
+                    ),
+                ]
+            ).map_elements(calculate_presence_price_in_temporary, return_dtype=str),
+            Devolucions=pl.struct(
+                [
+                    CATEGORY_COL,
+                    next(
+                        filter(
+                            lambda category: category["code"] == TEMPORARY_TYPE,
+                            CATEGORIES.values(),
+                        )
+                    ),
+                ]
+            ).map_elements(calculate_absence_discount_in_permanent, return_dtype=str),
+        )
+    )
+
+    grouped_data
+    return (grouped_data,)
+
+
+@app.cell(hide_code=True)
+def _(
+    CATEGORY_COL,
+    DOWNLOAD_LABEL,
+    ENCODING,
+    FILE_NAME_COL,
+    LEVEL_COL,
+    STUDENT_NAME_COL,
+    calendar,
+    file,
+    grouped_data,
+    mo,
+    pl,
+):
+    base_file_name = pl.read_csv(
+        file.contents(), encoding=ENCODING, separator=";", n_rows=1
+    )[FILE_NAME_COL][0]
+    month_number = int(
+        grouped_data.drop([STUDENT_NAME_COL, CATEGORY_COL, LEVEL_COL])
+        .columns[0]
+        .split("/")[1]
+        .split(" ")[0]
+    )
+    filename = f"{base_file_name}_{calendar.month_name[month_number]}.csv"
+    excel_download = mo.download(
+        data=grouped_data.write_csv(separator=";").encode(ENCODING),
+        filename=filename,
+        mimetype="text/csv",
+        label=DOWNLOAD_LABEL,
+    )
+    excel_download
+    return
+
+
+if __name__ == "__main__":
+    app.run()
