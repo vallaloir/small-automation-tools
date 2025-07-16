@@ -30,7 +30,7 @@ def _(mo):
     )
     TEMPORARY_PRICE_LABEL = "Preu (en €) per >{min_days} dies:"
     TITLE_PERMANENT_PRICE = "**Introduïu el descompte per faltar un dia:**"
-    PERMANENT_PRICE_LABEL = "Descompte (en €, serà considerat negatiu):"
+    PERMANENT_PRICE_LABEL = "Descompte{type} (en €, serà considerat negatiu):"
     SAVE_LABEL = "Utilitza els preus i descomptes modificats"
     MAIN_FILE_LABEL = "Selecciona el fitxer amb les files per agrupar:"
     DOWNLOAD_LABEL = "Descarrega l'Excel"
@@ -156,9 +156,11 @@ def _(
     temporary_day_prices = pl.read_csv(prices.contents(), separator=";").sort(
         by=SORTING_COL, descending=IS_DESCENDING_SORT
     )
-    permanent_discount = pl.read_csv(
-        discounts.contents(), encoding=ENCODING, separator=";"
-    )
+    permanent_discount = pl.read_csv(discounts.contents(), separator=";")
+    if not is_unique_tool_selected():
+        permanent_discount = permanent_discount.sort(
+            by=SORTING_COL, descending=IS_DESCENDING_SORT
+        )
     fields = []
     for limit in temporary_day_prices.iter_rows(named=True):
         input = mo.ui.number(
@@ -169,9 +171,18 @@ def _(
             else f"{limit[SORTING_COL]}:",
         )
         fields.append(input)
-    discount_price = mo.ui.number(
-        start=0, value=limit[DISCOUNT_COL][0], label=PERMANENT_PRICE_LABEL
-    )
+    discount_fields = []
+    for limit in permanent_discount.iter_rows(named=True):
+        discount_input = mo.ui.number(
+            start=0,
+            value=limit[DISCOUNT_COL],
+            label=PERMANENT_PRICE_LABEL.format(type="")
+            if is_unique_tool_selected()
+            else PERMANENT_PRICE_LABEL.format(
+                type=f" per {limit[SORTING_COL].lower()}"
+            ),
+        )
+        discount_fields.append(discount_input)
     edit_button = mo.ui.run_button(kind="success", label=SAVE_LABEL)
 
     # Display the elements in the correct order
@@ -180,12 +191,12 @@ def _(
             mo.md(text=TITLE_TEMPORARY_PRICE),
             *fields,
             mo.md(text=TITLE_PERMANENT_PRICE),
-            discount_price,
+            *discount_fields,
             edit_button,
         ]
     )
     return (
-        discount_price,
+        discount_fields,
         edit_button,
         fields,
         permanent_discount,
@@ -197,7 +208,7 @@ def _(
 def _(
     DISCOUNT_COL,
     PRICE_COL,
-    discount_price,
+    discount_fields,
     edit_button,
     fields,
     mo,
@@ -214,7 +225,7 @@ def _(
     )
     permanent_discount.replace_column(
         permanent_discount.columns.index(DISCOUNT_COL),
-        pl.Series(DISCOUNT_COL, [discount_price.value]),
+        pl.Series(DISCOUNT_COL, list(map(lambda input: input.value, discount_fields))),
     )
     return
 
@@ -235,6 +246,7 @@ def _(
     CATEGORIES,
     CATEGORY_COL,
     COLS_TO_BE_REMOVED,
+    DISCOUNT_COL,
     ENCODING,
     FILE_NAME_COL,
     LEVEL_COL,
@@ -244,10 +256,10 @@ def _(
     STUDENT_NAME_COL,
     TEMPORARY_TYPE,
     YEAR_COL,
-    discount_price,
     file,
     is_unique_tool_selected,
     np,
+    permanent_discount,
     pl,
     temporary_day_prices,
 ):
@@ -323,7 +335,27 @@ def _(
             )
             or 0
         )
-        return str(n_days * -1 * discount_price.value).replace(
+        return str(
+            n_days
+            * -1
+            * next(
+                filter(
+                    # Return the single line of the unique tool or find the one for the corresponding category
+                    lambda price_info: price_info
+                    if is_unique_tool_selected()
+                    else _price_for_category(
+                        price_info,
+                        category_and_days[
+                            CATEGORY_COL if is_unique_tool_selected() else FILE_NAME_COL
+                        ],
+                    ),
+                    permanent_discount.iter_rows(named=True),
+                ),
+                {
+                    DISCOUNT_COL: 0
+                },  # In case the student has not attended during the whole month
+            )[DISCOUNT_COL]
+        ).replace(
             ".", ","
         )  # Use comma as decimal separator, since current Polars version cannot handle it
 
