@@ -302,23 +302,28 @@ def _(
             or 0
         )
         return str(
-            n_days
-            * next(
-                filter(
-                    lambda price_info: _price_for_unique(price_info, n_days)
-                    if is_unique_tool_selected()
-                    else _price_for_category(
-                        price_info,
-                        category_and_days[
-                            CATEGORY_COL if is_unique_tool_selected() else FILE_NAME_COL
-                        ],
+            round(
+                n_days
+                * next(
+                    filter(
+                        lambda price_info: _price_for_unique(price_info, n_days)
+                        if is_unique_tool_selected()
+                        else _price_for_category(
+                            price_info,
+                            category_and_days[
+                                CATEGORY_COL
+                                if is_unique_tool_selected()
+                                else FILE_NAME_COL
+                            ],
+                        ),
+                        temporary_day_prices.iter_rows(named=True),
                     ),
-                    temporary_day_prices.iter_rows(named=True),
-                ),
-                {
-                    PRICE_COL: 0
-                },  # In case the student has not attended during the whole month
-            )[PRICE_COL]
+                    {
+                        PRICE_COL: 0
+                    },  # In case the student has not attended during the whole month
+                )[PRICE_COL],
+                2,
+            )
         ).replace(
             ".", ","
         )  # Use comma as decimal separator, since current Polars version cannot handle it
@@ -336,25 +341,30 @@ def _(
             or 0
         )
         return str(
-            n_days
-            * -1
-            * next(
-                filter(
-                    # Return the single line of the unique tool or find the one for the corresponding category
-                    lambda price_info: price_info
-                    if is_unique_tool_selected()
-                    else _price_for_category(
-                        price_info,
-                        category_and_days[
-                            CATEGORY_COL if is_unique_tool_selected() else FILE_NAME_COL
-                        ],
+            round(
+                n_days
+                * -1
+                * next(
+                    filter(
+                        # Return the single line of the unique tool or find the one for the corresponding category
+                        lambda price_info: price_info
+                        if is_unique_tool_selected()
+                        else _price_for_category(
+                            price_info,
+                            category_and_days[
+                                CATEGORY_COL
+                                if is_unique_tool_selected()
+                                else FILE_NAME_COL
+                            ],
+                        ),
+                        permanent_discount.iter_rows(named=True),
                     ),
-                    permanent_discount.iter_rows(named=True),
-                ),
-                {
-                    DISCOUNT_COL: 0
-                },  # In case the student has not attended during the whole month
-            )[DISCOUNT_COL]
+                    {
+                        DISCOUNT_COL: 0
+                    },  # In case the student has not attended during the whole month
+                )[DISCOUNT_COL],
+                2,
+            )
         ).replace(
             ".", ","
         )  # Use comma as decimal separator, since current Polars version cannot handle it
