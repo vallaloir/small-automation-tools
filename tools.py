@@ -132,7 +132,6 @@ def _(DISCOUNT_LABEL, mo):
 @app.cell(hide_code=True)
 def _(
     DISCOUNT_COL,
-    ENCODING,
     PERMANENT_PRICE_LABEL,
     PRICE_COL,
     SAVE_LABEL,
@@ -140,14 +139,23 @@ def _(
     TITLE_PERMANENT_PRICE,
     TITLE_TEMPORARY_PRICE,
     discounts,
+    is_unique_tool_selected,
     mo,
     pl,
     prices,
 ):
+    # Display the prices and allowing updating them according to the tool and concrete formatting of the input file
+    if is_unique_tool_selected():
+        SORTING_COL = "min_days"
+        IS_DESCENDING_SORT = True
+    else:
+        SORTING_COL = "type"
+        IS_DESCENDING_SORT = False
+
     # Generate all the elements
-    temporary_day_prices = pl.read_csv(
-        prices.contents(), encoding=ENCODING, separator=";"
-    ).sort(by="min_days", descending=True)
+    temporary_day_prices = pl.read_csv(prices.contents(), separator=";").sort(
+        by=SORTING_COL, descending=IS_DESCENDING_SORT
+    )
     permanent_discount = pl.read_csv(
         discounts.contents(), encoding=ENCODING, separator=";"
     )
@@ -156,7 +164,9 @@ def _(
         input = mo.ui.number(
             start=0,
             value=limit[PRICE_COL],
-            label=TEMPORARY_PRICE_LABEL.format(min_days=limit["min_days"]),
+            label=TEMPORARY_PRICE_LABEL.format(min_days=limit[SORTING_COL])
+            if is_unique_tool_selected()
+            else f"{limit[SORTING_COL]}:",
         )
         fields.append(input)
     discount_price = mo.ui.number(
@@ -226,6 +236,7 @@ def _(
     CATEGORY_COL,
     COLS_TO_BE_REMOVED,
     ENCODING,
+    FILE_NAME_COL,
     LEVEL_COL,
     N_ROWS_WITHOUT_RAW_DATA,
     PERMANENT_TYPE,
@@ -235,6 +246,7 @@ def _(
     YEAR_COL,
     discount_price,
     file,
+    is_unique_tool_selected,
     np,
     pl,
     temporary_day_prices,
@@ -243,6 +255,27 @@ def _(
     def count_row_values(values: dict) -> dict[str, int]:
         counts = np.unique_counts(list(values.values()))
         return dict(zip(counts.values, counts.counts))
+
+    def _get_struct_cols(selected_type: int) -> list[str]:
+        cols = [
+            CATEGORY_COL,
+            next(
+                filter(
+                    lambda category: category["code"] == selected_type,
+                    CATEGORIES.values(),
+                ),
+                {"type_to_count": ""},
+            )["type_to_count"],
+        ]
+        if not is_unique_tool_selected():
+            cols.append(FILE_NAME_COL)
+        return cols
+
+    def _price_for_unique(price_info: dict[str, int | float], n_days: int) -> float:
+        return n_days > price_info["min_days"]
+
+    def _price_for_category(price_info: dict[str, int | float], category: str) -> float:
+        return price_info["type"] == category
 
     def calculate_presence_price_in_temporary(category_and_days: dict) -> str:
         if (
@@ -260,7 +293,14 @@ def _(
             n_days
             * next(
                 filter(
-                    lambda price_info: n_days > price_info["min_days"],
+                    lambda price_info: _price_for_unique(price_info, n_days)
+                    if is_unique_tool_selected()
+                    else _price_for_category(
+                        price_info,
+                        category_and_days[
+                            CATEGORY_COL if is_unique_tool_selected() else FILE_NAME_COL
+                        ],
+                    ),
                     temporary_day_prices.iter_rows(named=True),
                 ),
                 {
@@ -288,6 +328,10 @@ def _(
         )  # Use comma as decimal separator, since current Polars version cannot handle it
 
     # Read as DF and format as expected
+    if not is_unique_tool_selected() and FILE_NAME_COL in COLS_TO_BE_REMOVED:
+        COLS_TO_BE_REMOVED.remove(
+            FILE_NAME_COL
+        ) # Do not remove the column with information about the subcategory
     data = (
         pl.read_csv(file.contents(), encoding=ENCODING, separator=";")
         .limit(-N_ROWS_WITHOUT_RAW_DATA)
@@ -296,6 +340,18 @@ def _(
     value_columns = list(data.columns)
     value_columns.remove(STUDENT_NAME_COL)
     value_columns.remove(YEAR_COL)
+
+    SORTING_COLS = (
+        [LEVEL_COL, CATEGORY_COL, STUDENT_NAME_COL]
+        if is_unique_tool_selected()
+        else [LEVEL_COL, STUDENT_NAME_COL, CATEGORY_COL, FILE_NAME_COL]
+    )
+    other_than_date_cols = [CATEGORY_COL, FILE_NAME_COL]
+    cols_to_group_by = [STUDENT_NAME_COL]
+    if not is_unique_tool_selected():
+        cols_to_group_by.append(FILE_NAME_COL)
+        value_columns.remove(FILE_NAME_COL)
+
     # Use the sorting functionality of np.unique to get the 'P', which is the last
     # possible value if present and has highest priority. It also works for the
     # categories, since if both are present ('puntual' and 'permanent'), 'puntual'
@@ -304,7 +360,7 @@ def _(
     # Then add up the corresponding type (A/P) based on the category
     # (puntual/permanent) and get the correct price or discount
     grouped_data = (
-        data.group_by(STUDENT_NAME_COL, maintain_order=True)
+        data.group_by(cols_to_group_by, maintain_order=True)
         .agg(
             # Generate the level column
             [
@@ -333,7 +389,10 @@ def _(
         # Calculate the subtotals of each type and get each in a separate column
         .with_columns(
             Recompte=pl.struct(
-                pl.col(filter(lambda col: col != CATEGORY_COL, value_columns))
+                # i.e. include only the date columns
+                pl.col(
+                    filter(lambda col: col not in other_than_date_cols, value_columns)
+                )
             ).map_elements(
                 count_row_values,
                 return_dtype=pl.Struct(
@@ -351,28 +410,12 @@ def _(
         .unnest("Recompte")
         # Calculate the prices and discounts according to school rules
         .with_columns(
-            Cobrar=pl.struct(
-                [
-                    CATEGORY_COL,
-                    next(
-                        filter(
-                            lambda category: category["code"] == PERMANENT_TYPE,
-                            CATEGORIES.values(),
-                        )
-                    ),
-                ]
-            ).map_elements(calculate_presence_price_in_temporary, return_dtype=str),
-            Devolucions=pl.struct(
-                [
-                    CATEGORY_COL,
-                    next(
-                        filter(
-                            lambda category: category["code"] == TEMPORARY_TYPE,
-                            CATEGORIES.values(),
-                        )
-                    ),
-                ]
-            ).map_elements(calculate_absence_discount_in_permanent, return_dtype=str),
+            Cobrar=pl.struct(_get_struct_cols(TEMPORARY_TYPE)).map_elements(
+                calculate_presence_price_in_temporary, return_dtype=str
+            ),
+            Devolucions=pl.struct(_get_struct_cols(PERMANENT_TYPE)).map_elements(
+                calculate_absence_discount_in_permanent, return_dtype=str
+            ),
         )
     )
 
@@ -391,17 +434,18 @@ def _(
     calendar,
     file,
     grouped_data,
+    is_unique_tool_selected,
     mo,
     pl,
 ):
     base_file_name = pl.read_csv(
         file.contents(), encoding=ENCODING, separator=";", n_rows=1
     )[FILE_NAME_COL][0]
+    non_month_cols = [STUDENT_NAME_COL, CATEGORY_COL, LEVEL_COL]
+    if not is_unique_tool_selected():
+        non_month_cols.append(FILE_NAME_COL)
     month_number = int(
-        grouped_data.drop([STUDENT_NAME_COL, CATEGORY_COL, LEVEL_COL])
-        .columns[0]
-        .split("/")[1]
-        .split(" ")[0]
+        grouped_data.drop(non_month_cols).columns[0].split("/")[1].split(" ")[0]
     )
     filename = f"{base_file_name}_{calendar.month_name[month_number]}.csv"
     excel_download = mo.download(
