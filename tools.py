@@ -370,8 +370,10 @@ def _(
         .drop(COLS_TO_BE_REMOVED, strict=False)
     )
     value_columns = list(data.columns)
-    value_columns.remove(STUDENT_NAME_COL)
-    value_columns.remove(YEAR_COL)
+    if STUDENT_NAME_COL in value_columns:
+        value_columns.remove(STUDENT_NAME_COL)
+    if YEAR_COL in value_columns:
+        value_columns.remove(YEAR_COL)
 
     SORTING_COLS = (
         [LEVEL_COL, CATEGORY_COL, STUDENT_NAME_COL]
