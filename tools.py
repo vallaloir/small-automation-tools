@@ -31,6 +31,9 @@ def _(mo):
     TEMPORARY_PRICE_LABEL = "Preu (en €) per >{min_days} dies:"
     TITLE_PERMANENT_PRICE = "**Introduïu el descompte per faltar un dia:**"
     PERMANENT_PRICE_LABEL = "Descompte{type} (en €, serà considerat negatiu):"
+    TITLE_MIN_DAYS_TO_DISCOUNT = (
+        "**Introduïu el mínim nombre de dies per començar a descomptar absències:**"
+    )
     SAVE_LABEL = "Utilitza els preus i descomptes modificats"
     MAIN_FILE_LABEL = "Selecciona el fitxer amb les files per agrupar:"
     DOWNLOAD_LABEL = "Descarrega l'Excel"
@@ -60,6 +63,8 @@ def _(mo):
     DISCOUNT_LABEL = (
         "Selecciona el fitxer amb els descomptes per faltes (alumnes permanents):"
     )
+    MIN_DAYS_TO_DISCOUNT = 9
+    MIN_DAYS_TO_DISCOUNT_LABEL = "Mínim de dies:"
     GROUP_TO_SINGLE_LINE_TOOL_LABEL = "Menjador"
     GROUP_TO_CATEGORY_LINE_TOOL_LABEL = "Acollida"
     TOOLS = [
@@ -91,6 +96,8 @@ def _(mo):
         FILE_NAME_COL,
         LEVEL_COL,
         MAIN_FILE_LABEL,
+        MIN_DAYS_TO_DISCOUNT,
+        MIN_DAYS_TO_DISCOUNT_LABEL,
         N_ROWS_WITHOUT_RAW_DATA,
         PERMANENT_PRICE_LABEL,
         PERMANENT_TYPE,
@@ -100,6 +107,7 @@ def _(mo):
         STUDENT_NAME_COL,
         TEMPORARY_PRICE_LABEL,
         TEMPORARY_TYPE,
+        TITLE_MIN_DAYS_TO_DISCOUNT,
         TITLE_PERMANENT_PRICE,
         TITLE_TEMPORARY_PRICE,
         YEAR_COL,
@@ -132,10 +140,13 @@ def _(DISCOUNT_LABEL, mo):
 @app.cell(hide_code=True)
 def _(
     DISCOUNT_COL,
+    MIN_DAYS_TO_DISCOUNT,
+    MIN_DAYS_TO_DISCOUNT_LABEL,
     PERMANENT_PRICE_LABEL,
     PRICE_COL,
     SAVE_LABEL,
     TEMPORARY_PRICE_LABEL,
+    TITLE_MIN_DAYS_TO_DISCOUNT,
     TITLE_PERMANENT_PRICE,
     TITLE_TEMPORARY_PRICE,
     discounts,
@@ -183,6 +194,15 @@ def _(
             ),
         )
         discount_fields.append(discount_input)
+    min_days_to_discount = (
+        mo.ui.number(
+            start=0,
+            value=MIN_DAYS_TO_DISCOUNT,
+            label=MIN_DAYS_TO_DISCOUNT_LABEL,
+        )
+        if not is_unique_tool_selected()
+        else ""
+    )
     edit_button = mo.ui.run_button(kind="success", label=SAVE_LABEL)
 
     # Display the elements in the correct order
@@ -192,6 +212,8 @@ def _(
             *fields,
             mo.md(text=TITLE_PERMANENT_PRICE),
             *discount_fields,
+            mo.md(text="" if is_unique_tool_selected() else TITLE_MIN_DAYS_TO_DISCOUNT),
+            min_days_to_discount,
             edit_button,
         ]
     )
@@ -199,6 +221,7 @@ def _(
         discount_fields,
         edit_button,
         fields,
+        min_days_to_discount,
         permanent_discount,
         temporary_day_prices,
     )
@@ -258,6 +281,7 @@ def _(
     YEAR_COL,
     file,
     is_unique_tool_selected,
+    min_days_to_discount,
     np,
     permanent_discount,
     pl,
@@ -340,6 +364,12 @@ def _(
             )
             or 0
         )
+        if not is_unique_tool_selected():
+            n_days = (
+                n_days - min_days_to_discount.value
+                if min_days_to_discount.value < n_days
+                else 0
+            )
         return str(
             round(
                 n_days
