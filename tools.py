@@ -21,7 +21,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _(mo):
     # Define necessary constants
     PERMANENT_TYPE = 1
     TEMPORARY_TYPE = 2
@@ -60,6 +60,26 @@ def _():
     DISCOUNT_LABEL = (
         "Selecciona el fitxer amb els descomptes per faltes (alumnes permanents):"
     )
+    GROUP_TO_SINGLE_LINE_TOOL_LABEL = "Menjador"
+    GROUP_TO_CATEGORY_LINE_TOOL_LABEL = "Acollida"
+    TOOLS = [
+        {"label": GROUP_TO_SINGLE_LINE_TOOL_LABEL, "code": "unique"},
+        {"label": GROUP_TO_CATEGORY_LINE_TOOL_LABEL, "code": "category"},
+    ]
+    UNIQUE_TOOL_CODE = "unique"
+    UNIQUE_TOOL_LABEL = next(
+        filter(lambda tool: tool["code"] == UNIQUE_TOOL_CODE, TOOLS), {"label": None}
+    )["label"]
+
+    tool_selection = mo.ui.radio(
+        options=[GROUP_TO_SINGLE_LINE_TOOL_LABEL, GROUP_TO_CATEGORY_LINE_TOOL_LABEL],
+        inline=True,
+    )
+
+    def is_unique_tool_selected() -> bool:
+        return tool_selection.value == UNIQUE_TOOL_LABEL
+
+    tool_selection
     return (
         CATEGORIES,
         CATEGORY_COL,
@@ -83,6 +103,7 @@ def _():
         TITLE_PERMANENT_PRICE,
         TITLE_TEMPORARY_PRICE,
         YEAR_COL,
+        is_unique_tool_selected,
     )
 
 
