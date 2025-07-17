@@ -112,6 +112,7 @@ def _(mo):
         TITLE_TEMPORARY_PRICE,
         YEAR_COL,
         is_unique_tool_selected,
+        tool_selection,
     )
 
 
@@ -154,7 +155,11 @@ def _(
     mo,
     pl,
     prices,
+    tool_selection,
 ):
+    # Prevent displaying any value depending on the selection of the tool
+    mo.stop(tool_selection.value is None)
+
     # Display the prices and allowing updating them according to the tool and concrete formatting of the input file
     if is_unique_tool_selected():
         SORTING_COL = "min_days"
@@ -254,7 +259,10 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(MAIN_FILE_LABEL, mo):
+def _(MAIN_FILE_LABEL, mo, tool_selection):
+    # Prevent displaying any value depending on the selection of the tool
+    mo.stop(tool_selection.value is None)
+
     file = mo.ui.file(
         filetypes=[".csv"],
         label=MAIN_FILE_LABEL,
@@ -282,11 +290,15 @@ def _(
     file,
     is_unique_tool_selected,
     min_days_to_discount,
+    mo,
     np,
     permanent_discount,
     pl,
     temporary_day_prices,
 ):
+    # Prevent running the cell if all the necessary files are not present
+    mo.stop(file.name() is None)
+
     # Define necessary auxiliary functions
     def count_row_values(values: dict) -> dict[str, int]:
         counts = np.unique_counts(list(values.values()))
