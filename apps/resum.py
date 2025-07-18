@@ -415,7 +415,7 @@ def _(
     if not is_unique_tool_selected() and FILE_NAME_COL in COLS_TO_BE_REMOVED:
         COLS_TO_BE_REMOVED.remove(
             FILE_NAME_COL
-        ) # Do not remove the column with information about the subcategory
+        )  # Do not remove the column with information about the subcategory
     data = (
         pl.read_csv(file.contents(), encoding=ENCODING, separator=";")
         .limit(-N_ROWS_WITHOUT_RAW_DATA)
