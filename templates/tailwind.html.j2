@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>marimo WebAssembly + GitHub Pages Template</title>
+  <title>Small Automation Tools</title>
   <!-- Include Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -11,9 +11,8 @@
   <div class="max-w-4xl mx-auto">
     <!-- Header -->
     <header class="bg-gray-100 p-6 text-center rounded-lg mb-6">
-      <img src="https://raw.githubusercontent.com/marimo-team/marimo/main/docs/_static/marimo-logotype-thick.svg" alt="marimo Logo" class="w-20 h-auto mx-auto mb-3">
-      <h1 class="text-2xl font-bold mb-2">marimo WebAssembly + GitHub Pages Template</h1>
-      <p class="text-sm">Interactive Python notebooks exported to WebAssembly and deployed to GitHub Pages</p>
+      <h1 class="text-2xl font-bold mb-2">Small Automation Tools</h1>
+      <p class="text-sm">Custom set of tools to facilitate management and billing tasks at a school. Most of the information and the apps are in Catalan as of now, since it is the language the end users speak.</p>
     </header>
 
     <main>
@@ -35,14 +34,14 @@
 
       {% if apps %}
       <h2 class="text-xl font-bold text-center my-4">Apps</h2>
-      <p class="text-center mb-4">Interactive applications in run mode - code is hidden for a clean user interface</p>
+      <p class="text-center mb-4">Small apps to speed up workflows and repetitive tasks</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for app in apps %}
         <!-- {{ app.display_name }} App -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
           <div class="bg-gray-100 p-3 font-semibold">{{ app.display_name }}</div>
           <div class="p-4">
-            <a href="{{ app.html_path }}" class="inline-block bg-amber-500 hover:bg-amber-600 text-white py-1 px-3 rounded transition-colors">Open App</a>
+            <a href="{{ app.html_path }}" class="inline-block bg-amber-500 hover:bg-amber-600 text-white py-1 px-3 rounded transition-colors">Obre l'App</a>
           </div>
         </div>
         {% endfor %}
@@ -51,7 +50,7 @@
     </main>
 
     <footer class="mt-10 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
-      <p class="mb-2">Built with <a href="https://marimo.io" target="_blank" class="text-blue-500 hover:underline">marimo</a> - Interactive Python notebooks</p>
+      <p class="mb-2">Built with <a href="https://marimo.io" target="_blank" class="text-blue-500 hover:underline">marimo</a> - Interactive Python notebooks and GitHub Pages Template</p>
     </footer>
   </div>
 </body>
