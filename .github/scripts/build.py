@@ -20,6 +20,8 @@ The exported files will be placed in the specified output directory (default: _s
 # ]
 # ///
 
+import os
+import shutil
 import subprocess
 from typing import List, Union
 from pathlib import Path
@@ -188,8 +190,27 @@ def _export(folder: Path, output_dir: Path, as_app: bool = False) -> List[dict]:
     return notebook_data
 
 
+def _copy_scripts(origin: Path, output_dir: Path) -> None:
+    script_directories = (
+        origin / "scripts" / directory
+        for directory in os.listdir(origin / "scripts")
+        if os.path.isdir(origin / "scripts" / directory)
+        and not directory.startswith(".")
+    )
+    for directory in script_directories:
+        logger.info(f"Successfully found directory: {directory}. Copying...")
+        (output_dir / directory).mkdir(parents=True, exist_ok=True)
+        for file_name in os.listdir(directory):
+            full_file_name = origin / directory / file_name
+            logger.info(
+                f"from {full_file_name} to {output_dir / directory / file_name}"
+            )
+            if os.path.isfile(full_file_name):
+                shutil.copy(full_file_name, output_dir / directory / file_name)
+
+
 def main(
-    output_dir: Union[str, Path] = "_site",
+    output_directory: Union[str, Path] = "_site",
     template: Union[str, Path] = "templates/tailwind.html.j2",
 ) -> None:
     """Main function to export marimo notebooks.
@@ -208,8 +229,8 @@ def main(
     """
     logger.info("Starting marimo build process")
 
-    # Convert output_dir explicitly to Path (not done by fire)
-    output_dir: Path = Path(output_dir)
+    # Convert output_directory explicitly to Path (not done by fire)
+    output_dir: Path = Path(output_directory)
     logger.info(f"Output directory: {output_dir}")
 
     # Make sure the output directory exists
@@ -224,6 +245,9 @@ def main(
 
     # Export apps from the apps/ directory
     apps_data = _export(Path("apps"), output_dir, as_app=True)
+
+    # Export scripts and CLI tools from the scripts/ directory
+    _copy_scripts(Path("scripts").parent, output_dir / "apps")
 
     # Exit if no notebooks or apps were found
     if not notebooks_data and not apps_data:
