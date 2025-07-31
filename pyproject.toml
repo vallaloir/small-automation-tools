@@ -21,3 +21,5 @@ members = [
     "scripts",
 ]
 
+[tool.mypy]
+exclude = ["templates"]
