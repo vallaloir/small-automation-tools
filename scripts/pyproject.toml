@@ -1,0 +1,12 @@
+[project]
+name = "scripts"
+version = "0.1.0"
+description = "Scripts to be pulled to run the required tool locally from the batch file"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "polars>=1.31.0",
+    "requests>=2.32.4",
+    "selenium>=4.34.2",
+    "types-requests>=2.32.4.20250611",
+]
