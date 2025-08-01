@@ -197,16 +197,15 @@ def _copy_scripts(origin: Path, output_dir: Path) -> None:
         if os.path.isdir(origin / "scripts" / directory)
         and not directory.startswith(".")
     )
+    output_dir.mkdir(parents=True, exist_ok=True)  # To make "public" if needed
     for directory in script_directories:
         logger.info(f"Successfully found directory: {directory}. Copying...")
-        (output_dir / directory).mkdir(parents=True, exist_ok=True)
         for file_name in os.listdir(directory):
             full_file_name = origin / directory / file_name
-            logger.info(
-                f"from {full_file_name} to {output_dir / directory / file_name}"
-            )
+            filename = Path(file_name).name
+            logger.info(f"from {full_file_name} to {output_dir / filename}")
             if os.path.isfile(full_file_name):
-                shutil.copy(full_file_name, output_dir / directory / file_name)
+                shutil.copy(full_file_name, output_dir / filename)
 
 
 def main(
@@ -247,7 +246,7 @@ def main(
     apps_data = _export(Path("apps"), output_dir, as_app=True)
 
     # Export scripts and CLI tools from the scripts/ directory
-    _copy_scripts(Path("scripts").parent, output_dir / "apps")
+    _copy_scripts(Path("scripts").parent, output_dir / "apps" / "public")
 
     # Exit if no notebooks or apps were found
     if not notebooks_data and not apps_data:
