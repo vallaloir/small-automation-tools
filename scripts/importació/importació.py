@@ -322,7 +322,7 @@ def main(filename: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Importació",
-        description="Importa valors assignats als conceptes facturables de CSV a ClickEdu",
+        description="Importa valors assignats als conceptes facturables de CSV a Clickedu",
     )
     parser.add_argument("filename", help="Drag and drop the CSV to be imported")
     args = parser.parse_args()
