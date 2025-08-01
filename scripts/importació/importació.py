@@ -1,3 +1,26 @@
+#!/usr/bin/env -S uv run
+"""
+Import script for billable concepts per student.
+
+This script sets the values of the billable concepts per student defined in a CSV into Clickedu. The user needs to log in manually and navigate to the corresponding page for security and flexibility.
+
+The script can be run from the command line with the arguments:
+    uv run scripts/importació/importació.py FILENAME
+
+The user should double-check and save afterwards. It also prints if it was not possible to add a student or a billable concept.
+"""
+
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "polars>=1.31.0",
+#     "requests>=2.32.4",
+#     "scripts",
+#     "selenium>=4.34.2",
+#     "types-requests>=2.32.4.20250611",
+# ]
+# ///
+
 import argparse
 from dataclasses import dataclass
 import io
