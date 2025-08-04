@@ -183,10 +183,18 @@ def main(filename: str) -> None:
                 )
             )
             # Activate the input if it is not available yet (text input for desired value is not available otherwise)
-            if not checkbox.is_selected():
+            billable_value = str(billing_info[item])
+            should_billable_value_be_removed = billable_value == "0"
+            if not checkbox.is_selected() or (
+                checkbox.is_selected() and should_billable_value_be_removed
+            ):  # Avoid type issues with string
                 ActionChains(driver).move_to_element(checkbox).pause(
                     1
                 ).click().perform()
+            # Proceed to the next value after unclicking a cell with a 0 value
+            if should_billable_value_be_removed:
+                continue
+            # Input the value
             input = next(
                 filter(
                     lambda input: input.get_attribute("type") == "text",
@@ -196,7 +204,7 @@ def main(filename: str) -> None:
                 )
             )
             input.clear()  # Needed if there is a previous value
-            input.send_keys(billing_info[item])
+            input.send_keys(billable_value)
 
     # Wait until the user saves or 15 minutes have passed
     MAX_WAITING_TIME_IN_SECONDS = 15 * 60
