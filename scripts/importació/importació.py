@@ -88,11 +88,15 @@ def main(filename: str) -> None:
 
     # Wait until the driver is in the correct page
     errors = [NoSuchElementException, ElementNotInteractableException]
+    MAX_LOGIN_TIME_IN_SECONDS = 3 * 60
     wait = WebDriverWait(
-        driver, timeout=60, poll_frequency=2, ignored_exceptions=errors
+        driver,
+        timeout=MAX_LOGIN_TIME_IN_SECONDS,
+        poll_frequency=2,
+        ignored_exceptions=errors,
     )
     print(
-        "Please input the login credentials in the opened browser and navigate to the billing page with the necessary students and billable concepts within one minute"
+        "Please input the login credentials in the opened browser and navigate to the billing page with the necessary students and billable concepts within three minutes"
     )
     try:
         wait.until(
