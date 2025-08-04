@@ -111,7 +111,7 @@ def main(filename: str) -> None:
         )
 
     # Read the imported data
-    data = pl.read_csv(filename, separator=";")
+    data = pl.read_csv(filename, separator=";", encoding="ISO-8859-1")
 
     # Find the relevant elements to add the values for the billable concepts
     table = driver.find_element(By.ID, "unique_id")
