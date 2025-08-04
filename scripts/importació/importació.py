@@ -45,16 +45,24 @@ class BillingInformation:
 
 def extract_information_from_tooltip(
     tooltip_element: WebElement,
+    billable_items: list[str],
 ) -> BillingInformation | None:
     tooltip = tooltip_element.get_attribute("tooltip")
     if tooltip is None:
         return None
-    tooltip_parts = tooltip.split("<br />")
-    return BillingInformation(
-        tooltip_parts[0].strip(),
-        tooltip_parts[1].split("-", 1)[0].strip(),
-        tooltip_element,
-    )
+    try:
+        [student_name, full_item_name] = tooltip.split("<br />")
+        item_name = full_item_name.split("-", 1)[0].strip()
+        # Reduce the list of items as much as possible
+        if item_name not in billable_items:
+            return None
+        return BillingInformation(
+            student_name.strip(),
+            item_name,
+            tooltip_element,
+        )
+    except ValueError:  # if the tooltip doesn't contain all expected parts
+        return None
 
 
 def main(filename: str) -> None:
@@ -115,13 +123,15 @@ def main(filename: str) -> None:
 
     # Find the relevant elements to add the values for the billable concepts
     table = driver.find_element(By.ID, "unique_id")
+    all_divs = table.find_elements(By.TAG_NAME, "div")
+    concepts_to_modify = data.columns
     # Needing to ignore the types in filters related to this variable since it considers it as list[BillingInformation | None] when it cannot be None due to the filter
     billing_fields = list(
         filter(
             lambda result: result is not None,
             map(
-                extract_information_from_tooltip,
-                table.find_elements(By.TAG_NAME, "div"),
+                lambda div: extract_information_from_tooltip(div, concepts_to_modify),
+                all_divs,
             ),
         )
     )
