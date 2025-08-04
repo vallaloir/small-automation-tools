@@ -195,7 +195,9 @@ def main(filename: str) -> None:
             # Activate the input if it is not available yet (text input for desired value is not available otherwise)
             billable_value = str(billing_info[item])
             should_billable_value_be_removed = billable_value == "0"
-            if not checkbox.is_selected() or (
+            if (
+                not should_billable_value_be_removed and not checkbox.is_selected()
+            ) or (
                 checkbox.is_selected() and should_billable_value_be_removed
             ):  # Avoid type issues with string
                 ActionChains(driver).move_to_element(checkbox).pause(
