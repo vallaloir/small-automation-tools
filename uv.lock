@@ -386,6 +386,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-dotenv"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
+]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -448,17 +457,15 @@ version = "0.1.0"
 source = { virtual = "scripts" }
 dependencies = [
     { name = "polars" },
-    { name = "requests" },
     { name = "selenium" },
-    { name = "types-requests" },
+    { name = "webdriver-manager" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "polars", specifier = ">=1.31.0" },
-    { name = "requests", specifier = ">=2.32.4" },
     { name = "selenium", specifier = ">=4.34.2" },
-    { name = "types-requests", specifier = ">=2.32.4.20250611" },
+    { name = "webdriver-manager", specifier = ">=4.0.2" },
 ]
 
 [[package]]
@@ -578,18 +585,6 @@ wheels = [
 ]
 
 [[package]]
-name = "types-requests"
-version = "2.32.4.20250611"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "urllib3" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/7f/73b3a04a53b0fd2a911d4ec517940ecd6600630b559e4505cc7b68beb5a0/types_requests-2.32.4.20250611.tar.gz", hash = "sha256:741c8777ed6425830bf51e54d6abe245f79b4dcb9019f1622b773463946bf826", size = 23118, upload-time = "2025-06-11T03:11:41.272Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/ea/0be9258c5a4fa1ba2300111aa5a0767ee6d18eb3fd20e91616c12082284d/types_requests-2.32.4.20250611-py3-none-any.whl", hash = "sha256:ad2fe5d3b0cb3c2c902c8815a70e7fb2302c4b8c1f77bdcd738192cdb3878072", size = 20643, upload-time = "2025-06-11T03:11:40.186Z" },
-]
-
-[[package]]
 name = "typing-extensions"
 version = "4.14.1"
 source = { registry = "https://pypi.org/simple" }
@@ -623,6 +618,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/42/e0e305207bb88c6b8d3061399c6a961ffe5fbb7e2aa63c9234df7259e9cd/uvicorn-0.35.0.tar.gz", hash = "sha256:bc662f087f7cf2ce11a1d7fd70b90c9f98ef2e2831556dd078d131b96cc94a01", size = 78473, upload-time = "2025-06-28T16:15:46.058Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/e2/dc81b1bd1dcfe91735810265e9d26bc8ec5da45b4c0f6237e286819194c3/uvicorn-0.35.0-py3-none-any.whl", hash = "sha256:197535216b25ff9b785e29a0b79199f55222193d47f820816e7da751e9bc8d4a", size = 66406, upload-time = "2025-06-28T16:15:44.816Z" },
+]
+
+[[package]]
+name = "webdriver-manager"
+version = "4.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/24/4f/6e44478908c5133f680378d687f14ecaa99feed2c535344fcf68d8d21500/webdriver_manager-4.0.2.tar.gz", hash = "sha256:efedf428f92fd6d5c924a0d054e6d1322dd77aab790e834ee767af392b35590f", size = 25940, upload-time = "2024-07-25T08:13:49.331Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/b5/3bd0b038d80950ec13e6a2c8d03ed8354867dc60064b172f2f4ffac8afbe/webdriver_manager-4.0.2-py2.py3-none-any.whl", hash = "sha256:75908d92ecc45ff2b9953614459c633db8f9aa1ff30181cefe8696e312908129", size = 27778, upload-time = "2024-07-25T08:13:47.917Z" },
 ]
 
 [[package]]

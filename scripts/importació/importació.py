@@ -14,21 +14,14 @@ The user should double-check and save afterwards. It also prints if it was not p
 # requires-python = ">=3.13"
 # dependencies = [
 #     "polars>=1.31.0",
-#     "requests>=2.32.4",
 #     "scripts",
 #     "selenium>=4.34.2",
-#     "types-requests>=2.32.4.20250611",
+#     "webdriver_manager>=4.0.2",
 # ]
 # ///
 
 import argparse
 from dataclasses import dataclass
-import io
-import os
-from pathlib import Path
-import requests
-import subprocess
-import zipfile
 
 import polars as pl
 from selenium import webdriver
@@ -40,6 +33,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 @dataclass
@@ -47,93 +41,6 @@ class BillingInformation:
     student: str
     billing_item: str
     element: WebElement
-
-
-def _transform_to_chromedriver_platform_key(platform: str) -> str:
-    match platform:
-        case str(platform_str) if "Linux" in platform_str:
-            return "linux64"
-        case str(platform_str) if "Darwin" in platform_str:
-            cpu_version = subprocess.run(
-                ["uname", "-m"], capture_output=True, text=True
-            ).stdout
-            return "mac-x64" if "x86_64" in cpu_version else "mac-arm64"
-        case str(platform_str) if "MINGW32_NT" in platform_str:
-            return "win32"
-        case str(platform_str) if "MINGW64_NT" in platform_str:
-            return "win64"
-        case _:
-            raise AttributeError(f"Platform could not be found or matched: {platform}")
-
-
-def _download_chromedriver(user_platform: str, chromedriver_path: Path) -> None:
-    # Find the current Chrome version
-    if "win" in user_platform:
-        chrome_version_extraction_command = [
-            "wmic",
-            "datafile",
-            "where",
-            'name="C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"',
-            "get",
-            "Version",
-            "/value",
-        ]
-        raw_version = subprocess.run(
-            chrome_version_extraction_command, capture_output=True, text=True
-        ).stdout.lower()
-        # Check in the non-x86 directory if not present in that one
-        if "version" not in raw_version:
-            raw_version = subprocess.run(
-                list(
-                    map(
-                        lambda command_part: command_part.replace(" (x86)", ""),
-                        chrome_version_extraction_command,
-                    )
-                ),
-                capture_output=True,
-                text=True,
-            ).stdout.lower()
-            if "version" not in raw_version:
-                raise RuntimeError(
-                    "Chrome is not installed. The program cannot proceed."
-                )
-        chrome_version = raw_version.split("version=")[1].strip()
-    else:
-        chrome_version = (
-            subprocess.run(
-                ["google-chrome", "--version"], capture_output=True, text=True
-            )
-            .stdout.split()[-1]
-            .strip()
-        )
-    print(f"Detected Chrome version: {chrome_version}")
-
-    # Find the corresponding download URL for the matching chromedriver
-    CHROMEDRIVER_VERSIONS_LINK = "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json"
-    versions = requests.get(CHROMEDRIVER_VERSIONS_LINK).json()
-    chromedriver_platforms = next(
-        filter(
-            lambda version_info: version_info["version"] == chrome_version,
-            versions["versions"],
-        )
-    )["downloads"]["chromedriver"]
-    chromedriver_link = next(
-        filter(
-            lambda platform_info: platform_info["platform"] == user_platform,
-            chromedriver_platforms,
-        )
-    )["url"]
-
-    # Download chromedriver and make it an executable file if needed
-    request = requests.get(chromedriver_link)
-    if not request.ok:
-        raise RuntimeError("Chromedriver download failed. The program cannot proceed.")
-    file = zipfile.ZipFile(io.BytesIO(request.content))
-    file.extractall()
-
-    if "win" not in user_platform:
-        subprocess.run(["chmod", "+x", chromedriver_path])
-    print("Chromedriver downloaded!")
 
 
 def extract_information_from_tooltip(
@@ -158,41 +65,16 @@ def main(filename: str) -> None:
     filename : str
         Path of the file with the values for the billable concepts per student
     """
-    # Check whether Chromedriver is available or download it
-    print("Checking platform version...")
-    try:
-        user_platform = _transform_to_chromedriver_platform_key(
-            subprocess.run(["uname"], capture_output=True, text=True).stdout
-        )
-    except Exception:
-        raise RuntimeError(
-            "User platform could not be matched. Unknown Chromedriver needed. The program cannot proceed."
-        )
-    print("Checking matching version of Chromedriver...")
-    chromedriver_path = (
-        Path(f"chromedriver-{user_platform}")
-        / f"chromedriver{'.exe' if 'win' in user_platform else ''}"
-    ).resolve()
-    if not os.path.exists(chromedriver_path):
-        print("Downloading the matching chromedriver...")
-        try:
-            _download_chromedriver(user_platform, chromedriver_path)
-        except Exception:
-            raise RuntimeError(
-                "Chromedriver download failed. The program cannot proceed."
-            )
-
     # Configure Chrome options
     opts = Options()
     opts.add_argument("--start-maximized")
 
-    # Configure ChromeDriver service
-    service = Service(str(chromedriver_path))
-
     # Start the Chrome driver with the configured options and service
     print("Opening browser...")
     try:
-        driver = webdriver.Chrome(service=service, options=opts)
+        driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()), options=opts
+        )
         driver.get("https://santjosep.clickedu.eu/user.php?action=login")
     except Exception:
         raise RuntimeError(
