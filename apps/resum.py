@@ -521,16 +521,13 @@ def _(
     calendar,
     file,
     grouped_data,
-    is_unique_tool_selected,
     mo,
     pl,
 ):
     base_file_name = pl.read_csv(
         file.contents(), encoding=ENCODING, separator=";", n_rows=1
     )[FILE_NAME_COL][0]
-    non_month_cols = [STUDENT_NAME_COL, CATEGORY_COL, LEVEL_COL]
-    if not is_unique_tool_selected():
-        non_month_cols.append(FILE_NAME_COL)
+    non_month_cols = [STUDENT_NAME_COL, CATEGORY_COL, LEVEL_COL, FILE_NAME_COL]
     month_number = int(
         grouped_data.drop(non_month_cols).columns[0].split("/")[1].split(" ")[0]
     )
