@@ -7,6 +7,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     import marimo as mo  # Recommended by Marimo to be imported as first and only
+
     return (mo,)
 
 
@@ -15,6 +16,7 @@ def _():
     import calendar
     import numpy as np
     import polars as pl
+
     return calendar, np, pl
 
 
