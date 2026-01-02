@@ -65,7 +65,7 @@ def _(mo):
     DISCOUNT_LABEL = (
         "Selecciona el fitxer amb els descomptes per faltes (alumnes permanents):"
     )
-    MIN_DAYS_TO_DISCOUNT = 9
+    MIN_DAYS_TO_DISCOUNT = 7
     MIN_DAYS_TO_DISCOUNT_LABEL = "Mínim de dies:"
     GROUP_TO_SINGLE_LINE_TOOL_LABEL = "Menjador"
     GROUP_TO_CATEGORY_LINE_TOOL_LABEL = "Acollida"
@@ -395,20 +395,40 @@ def _(
             return ""
         n_days = (
             category_and_days.get(
-                CATEGORIES[category_and_days[CATEGORY_COL]]["type_to_count"]
+                next(
+                    filter(
+                        lambda key: key not in [CATEGORY_COL, FILE_NAME_COL],
+                        category_and_days.keys(),
+                    )
+                )
             )
             or 0
         )
-        if not is_unique_tool_selected():
-            n_days = (
-                n_days - min_days_to_discount.value
-                if min_days_to_discount.value < n_days
-                else 0
+        normal_price_for_category = 0  # Number of missing days are counted for the unique tool so nothing is to be subtracted
+        if (
+            not is_unique_tool_selected()
+        ):  # Discount if the student has not come as many days as minimum expected
+            n_days = n_days if min_days_to_discount.value > n_days else 0
+            normal_price_for_category = (
+                0
+                if n_days == 0
+                else next(
+                    filter(
+                        lambda price_info: _price_for_category(
+                            price_info,
+                            category_and_days[FILE_NAME_COL],
+                        ),
+                        temporary_day_prices.iter_rows(named=True),
+                    ),
+                    {
+                        MAX_PRICE_COL: 0
+                    },  # In case the student has not attended during the whole month
+                )[MAX_PRICE_COL]
             )
         return str(
             round(
                 n_days
-                * -1
+                * (-1 if is_unique_tool_selected() else 1)
                 * next(
                     filter(
                         # Return the single line of the unique tool or find the one for the corresponding category
@@ -430,6 +450,7 @@ def _(
                 )[DISCOUNT_COL],
                 2,
             )
+            - normal_price_for_category
         ).replace(
             ".", ","
         )  # Use comma as decimal separator, since current Polars version cannot handle it
@@ -525,9 +546,11 @@ def _(
             Cobrar=pl.struct(_get_struct_cols(TEMPORARY_TYPE)).map_elements(
                 calculate_presence_price_in_temporary, return_dtype=str
             ),
-            Devolucions=pl.struct(_get_struct_cols(PERMANENT_TYPE)).map_elements(
-                calculate_absence_discount_in_permanent, return_dtype=str
-            ),
+            Devolucions=pl.struct(
+                _get_struct_cols(
+                    PERMANENT_TYPE if is_unique_tool_selected() else TEMPORARY_TYPE
+                )
+            ).map_elements(calculate_absence_discount_in_permanent, return_dtype=str),
         )
     )
 
