@@ -432,7 +432,10 @@ def _(
     )
     other_than_date_cols = [CATEGORY_COL, FILE_NAME_COL]
     cols_to_group_by = [STUDENT_NAME_COL]
-    if not is_unique_tool_selected():
+    if is_unique_tool_selected():
+        cols_to_group_by.append(CATEGORY_COL)
+        value_columns.remove(CATEGORY_COL)
+    else:
         cols_to_group_by.append(FILE_NAME_COL)
         value_columns.remove(FILE_NAME_COL)
 
