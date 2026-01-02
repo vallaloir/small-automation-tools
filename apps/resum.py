@@ -1,26 +1,24 @@
 import marimo
 
-__generated_with = "0.14.10"
+__generated_with = "0.18.4"
 app = marimo.App(width="medium")
 
 
-@app.cell()
+@app.cell
 def _():
     import marimo as mo  # Recommended by Marimo to be imported as first and only
-
     return (mo,)
 
 
-@app.cell()
+@app.cell
 def _():
     import calendar
     import numpy as np
     import polars as pl
-
     return calendar, np, pl
 
 
-@app.cell()
+@app.cell
 def _(mo):
     # Define necessary constants
     PERMANENT_TYPE = 1
@@ -116,7 +114,7 @@ def _(mo):
     )
 
 
-@app.cell()
+@app.cell
 def _(PRICE_LABEL, mo):
     prices = mo.ui.file(
         filetypes=[".csv"],
@@ -127,7 +125,7 @@ def _(PRICE_LABEL, mo):
     return (prices,)
 
 
-@app.cell()
+@app.cell
 def _(DISCOUNT_LABEL, mo):
     discounts = mo.ui.file(
         filetypes=[".csv"],
@@ -138,7 +136,7 @@ def _(DISCOUNT_LABEL, mo):
     return (discounts,)
 
 
-@app.cell()
+@app.cell
 def _(
     DISCOUNT_COL,
     MIN_DAYS_TO_DISCOUNT,
@@ -232,7 +230,7 @@ def _(
     )
 
 
-@app.cell()
+@app.cell
 def _(
     DISCOUNT_COL,
     PRICE_COL,
@@ -258,7 +256,7 @@ def _(
     return
 
 
-@app.cell()
+@app.cell
 def _(MAIN_FILE_LABEL, mo, tool_selection):
     # Prevent displaying any value depending on the selection of the tool
     mo.stop(tool_selection.value is None)
@@ -272,7 +270,7 @@ def _(MAIN_FILE_LABEL, mo, tool_selection):
     return (file,)
 
 
-@app.cell()
+@app.cell
 def _(
     CATEGORIES,
     CATEGORY_COL,
@@ -509,7 +507,7 @@ def _(
     return (grouped_data,)
 
 
-@app.cell()
+@app.cell
 def _(
     CATEGORY_COL,
     DOWNLOAD_LABEL,
