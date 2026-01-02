@@ -318,7 +318,7 @@ def _(
         return cols
 
     def _price_for_unique(price_info: dict[str, int | float], n_days: int) -> float:
-        return n_days > price_info["min_days"]
+        return n_days >= price_info["min_days"]
 
     def _price_for_category(price_info: dict[str, int | float], category: str) -> float:
         return price_info["type"] == category
