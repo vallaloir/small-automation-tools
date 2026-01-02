@@ -27,6 +27,7 @@ def _(mo):
         "**Introduïu els preus en funció dels dies que s'ha quedat l'alumne:**"
     )
     TEMPORARY_PRICE_LABEL = "Preu (en €) per >{min_days} dies:"
+    TITLE_TEMPORARY_MAX_PRICE = "**Introduïu el preu màxim per alumnes puntuals:**"
     TITLE_PERMANENT_PRICE = "**Introduïu el descompte per faltar un dia:**"
     PERMANENT_PRICE_LABEL = "Descompte{type} (en €, serà considerat negatiu):"
     TITLE_MIN_DAYS_TO_DISCOUNT = (
@@ -57,6 +58,7 @@ def _(mo):
     }
     PRICE_COL = "price"
     PRICE_LABEL = "Selecciona el fitxer amb els preus (alumnes puntuals):"
+    MAX_PRICE_COL = "max"
     DISCOUNT_COL = "discount"
     DISCOUNT_LABEL = (
         "Selecciona el fitxer amb els descomptes per faltes (alumnes permanents):"
@@ -94,6 +96,7 @@ def _(mo):
         FILE_NAME_COL,
         LEVEL_COL,
         MAIN_FILE_LABEL,
+        MAX_PRICE_COL,
         MIN_DAYS_TO_DISCOUNT,
         MIN_DAYS_TO_DISCOUNT_LABEL,
         N_ROWS_WITHOUT_RAW_DATA,
@@ -107,6 +110,7 @@ def _(mo):
         TEMPORARY_TYPE,
         TITLE_MIN_DAYS_TO_DISCOUNT,
         TITLE_PERMANENT_PRICE,
+        TITLE_TEMPORARY_MAX_PRICE,
         TITLE_TEMPORARY_PRICE,
         YEAR_COL,
         is_unique_tool_selected,
@@ -139,6 +143,7 @@ def _(DISCOUNT_LABEL, mo):
 @app.cell
 def _(
     DISCOUNT_COL,
+    MAX_PRICE_COL,
     MIN_DAYS_TO_DISCOUNT,
     MIN_DAYS_TO_DISCOUNT_LABEL,
     PERMANENT_PRICE_LABEL,
@@ -147,6 +152,7 @@ def _(
     TEMPORARY_PRICE_LABEL,
     TITLE_MIN_DAYS_TO_DISCOUNT,
     TITLE_PERMANENT_PRICE,
+    TITLE_TEMPORARY_MAX_PRICE,
     TITLE_TEMPORARY_PRICE,
     discounts,
     is_unique_tool_selected,
@@ -176,6 +182,7 @@ def _(
             by=SORTING_COL, descending=IS_DESCENDING_SORT
         )
     fields = []
+    max_price_fields = []
     for limit in temporary_day_prices.iter_rows(named=True):
         input = mo.ui.number(
             start=0,
@@ -185,6 +192,18 @@ def _(
             else f"{limit[SORTING_COL]}:",
         )
         fields.append(input)
+        max_price_input = (
+            mo.ui.number(
+                start=0,
+                value=limit[MAX_PRICE_COL],
+                label=TEMPORARY_PRICE_LABEL.format(min_days=limit[SORTING_COL])
+                if is_unique_tool_selected()
+                else f"{limit[SORTING_COL]}:",
+            )
+            if not is_unique_tool_selected()
+            else ""
+        )
+        max_price_fields.append(max_price_input)
     discount_fields = []
     for limit in permanent_discount.iter_rows(named=True):
         discount_input = mo.ui.number(
@@ -213,6 +232,8 @@ def _(
         [
             mo.md(text=TITLE_TEMPORARY_PRICE),
             *fields,
+            mo.md(text="" if is_unique_tool_selected() else TITLE_TEMPORARY_MAX_PRICE),
+            *max_price_fields,
             mo.md(text=TITLE_PERMANENT_PRICE),
             *discount_fields,
             mo.md(text="" if is_unique_tool_selected() else TITLE_MIN_DAYS_TO_DISCOUNT),
@@ -279,6 +300,7 @@ def _(
     ENCODING,
     FILE_NAME_COL,
     LEVEL_COL,
+    MAX_PRICE_COL,
     N_ROWS_WITHOUT_RAW_DATA,
     PERMANENT_TYPE,
     PRICE_COL,
@@ -335,27 +357,28 @@ def _(
             )
             or 0
         )
+        price_info = next(
+            filter(
+                lambda price_info: _price_for_unique(price_info, n_days)
+                if is_unique_tool_selected()
+                else _price_for_category(
+                    price_info,
+                    category_and_days[
+                        CATEGORY_COL if is_unique_tool_selected() else FILE_NAME_COL
+                    ],
+                ),
+                temporary_day_prices.iter_rows(named=True),
+            ),
+            {
+                PRICE_COL: 0
+            },  # In case the student has not attended during the whole month
+        )
         return str(
             round(
-                n_days
-                * next(
-                    filter(
-                        lambda price_info: _price_for_unique(price_info, n_days)
-                        if is_unique_tool_selected()
-                        else _price_for_category(
-                            price_info,
-                            category_and_days[
-                                CATEGORY_COL
-                                if is_unique_tool_selected()
-                                else FILE_NAME_COL
-                            ],
-                        ),
-                        temporary_day_prices.iter_rows(named=True),
-                    ),
-                    {
-                        PRICE_COL: 0
-                    },  # In case the student has not attended during the whole month
-                )[PRICE_COL],
+                min(
+                    n_days * price_info[PRICE_COL],
+                    price_info.get(MAX_PRICE_COL, float("inf")),
+                ),
                 2,
             )
         ).replace(
